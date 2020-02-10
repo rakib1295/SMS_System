@@ -21,6 +21,8 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using Oracle.ManagedDataAccess.Client;
 using System.ComponentModel;
+using System.Deployment.Application;
+using System.Net.NetworkInformation;
 
 namespace SMS_System
 {
@@ -87,14 +89,49 @@ namespace SMS_System
 
             
             Application.Current.MainWindow.Closing += MainWindow_Closing;
+            Application.Current.MainWindow.Loaded += MainWindow_Loaded;
+
+#if !DEBUG
+            versionNumber.Text = "Version: " + ApplicationDeployment.CurrentDeployment.CurrentVersion.ToString(4);
+#endif
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            report_textbox.Text = Properties.Settings.Default.ErrorReportPhnNumbers;
+            error_checkbox.IsChecked = Properties.Settings.Default.CheckError;
+            ITX_error_Send.IsChecked = Properties.Settings.Default.SendErrorReport;
+            error_parcent_textbox.Text = Properties.Settings.Default.ErrorLimit;
+            user_name.Text = Properties.Settings.Default.UserName;
+            acc_psw.Password = Properties.Settings.Default.Password;
+            ITXAdditional_checkbox.IsChecked = Properties.Settings.Default.SendITXAdd;
+            AdditionalMsgTime_txtbox.Text = Properties.Settings.Default.SMSTimeAdd;
+            AdditionalMsgPhnNumber_txtbox.Text = Properties.Settings.Default.ITXAddPhnNumbers;
+            Account_check.IsChecked = Properties.Settings.Default.CheckCredit;
+            Alarm_time_textbox.Text = Properties.Settings.Default.SMSTime;
         }
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
-            if (MessageBox.Show("Closing application will delete all data, do you want to continue?", Title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
+            if (MessageBox.Show("Do you want to close the app?", Title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
             {
                 e.Cancel = true;
+            }
+            else
+            {
+                Properties.Settings.Default.ErrorReportPhnNumbers = report_textbox.Text;
+                Properties.Settings.Default.CheckError = (bool)error_checkbox.IsChecked;
+                Properties.Settings.Default.SendErrorReport = (bool)ITX_error_Send.IsChecked;
+                Properties.Settings.Default.ErrorLimit = error_parcent_textbox.Text;
+                Properties.Settings.Default.UserName = user_name.Text;
+                Properties.Settings.Default.Password = acc_psw.Password;
+                Properties.Settings.Default.SendITXAdd = (bool)ITXAdditional_checkbox.IsChecked;
+                Properties.Settings.Default.SMSTimeAdd = AdditionalMsgTime_txtbox.Text;
+                Properties.Settings.Default.ITXAddPhnNumbers = AdditionalMsgPhnNumber_txtbox.Text;
+                Properties.Settings.Default.CheckCredit = (bool)Account_check.IsChecked;
+                Properties.Settings.Default.SMSTime = Alarm_time_textbox.Text;
 
+                Properties.Settings.Default.Save();
             }
         }
 
@@ -247,7 +284,7 @@ namespace SMS_System
             {
                 _reset = true;
                 SMSData_Status = 0;
-                SMSDestination_Status = 0;
+                //SMSDestination_Status = 0;
                 Send_Status = 0;
                 NumberofDestination = 0;
 
@@ -271,7 +308,7 @@ namespace SMS_System
                 Send_Status = 0;
                 SentMsgCount = 0;
                 SMSData_Status = 0;
-                SMSDestination_Status = 0;
+                //SMSDestination_Status = 0;
                 SubtractiveDataDay = 1;
                 Query_Only = false;
 
@@ -290,7 +327,7 @@ namespace SMS_System
             {
                 SentMsgCount = 0;
                 SMSData_Status = 0;
-                SMSDestination_Status = 0;
+                //SMSDestination_Status = 0;
                 Query_Only = false;
                 SubtractiveDataDay = 0;
                 Send_Status = 0;
@@ -557,7 +594,7 @@ namespace SMS_System
 
                         if (!Query_Only)
                         {
-                            FetchingSMSDestination(); //Collects destination numbers
+                            //FetchingSMSDestination(); //Collects destination numbers
 
                             if (SMSDestination_Status == 1)
                             {
@@ -841,7 +878,7 @@ namespace SMS_System
             {
                 try
                 {
-                    String UrlString = "http://bulksms.teletalk.com.bd/link_sms_send.php?op=SMS&user=" + user_name_string + "&pass=" + Password_string + "&mobile=" + PhnNum + "&sms=" + SmsString;//#############################################################
+                    String UrlString = "http://bulksms.teletalk.com.bd/link_sms_send.php?op=SMS&user=" + User_name_string + "&pass=" + Password_string + "&mobile=" + PhnNum + "&sms=" + SmsString;//#############################################################
                     HttpWebRequest request = (HttpWebRequest)WebRequest.Create(@UrlString);
                     request.AllowWriteStreamBuffering = false;
                     WebResponse response = request.GetResponse();
@@ -1043,7 +1080,7 @@ namespace SMS_System
                 {
                     SentMsgCount = 0;
                     SMSData_Status = 0;
-                    SMSDestination_Status = 0;
+                    //SMSDestination_Status = 0;
                     Query_Only = false;
 
                     if (_ans | _icx | _itx)
@@ -1091,7 +1128,7 @@ namespace SMS_System
                     Write_logFile("Button clicked (Reset).");/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     SentMsgCount = 0;
                     SMSData_Status = 0;
-                    SMSDestination_Status = 0;
+                    //SMSDestination_Status = 0;
                     Send_Status = 0;
                     NumberofDestination = 0;
 
@@ -1512,7 +1549,7 @@ namespace SMS_System
         }
 
 
-        String user_name_string = "";
+        String User_name_string = "";
         String Password_string = "";
 
         private void acc_psw_PasswordChanged_1(object sender, RoutedEventArgs e)
@@ -1522,7 +1559,7 @@ namespace SMS_System
 
         private void user_name_TextChanged_1(object sender, TextChangedEventArgs e)
         {
-            user_name_string = user_name.Text;
+            User_name_string = user_name.Text;
         }
 
         private void Account_check_Checked_1(object sender, RoutedEventArgs e)
@@ -1552,6 +1589,106 @@ namespace SMS_System
             Additional_send_btn.IsEnabled = true;
         }
 
+        private void AccTest_btn_Click(object sender, RoutedEventArgs e)
+        {
+            AccTest_Txtblk.Text = "Please wait......";
+            AccountTestTask();
+        }
+
+        private async void AccountTestTask()
+        {
+            await Task.Run(() => HttpCalltoTeletalk());
+        }
+
+        private void HttpCalltoTeletalk()
+        {
+            string responseFromHttpWeb = "";
+
+            if (NetworkInterface.GetIsNetworkAvailable())
+            {
+                try
+                {
+                    String UrlString = "http://bulksms.teletalk.com.bd/link_sms_send.php?op=SMS&user=" + User_name_string + "&pass=" + Password_string;
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(@UrlString);
+                    request.AllowWriteStreamBuffering = false;
+
+
+                    WebResponse response = request.GetResponse();
+                    // Display the status.
+                    //Console.WriteLine(((HttpWebResponse)response).StatusDescription);
+                    // Get the stream containing content returned by the server.
+                    Stream dataStream = response.GetResponseStream();
+                    // Open the stream using a StreamReader for easy access.
+                    StreamReader reader = new StreamReader(dataStream);
+                    // Read the content.
+
+                    responseFromHttpWeb = reader.ReadToEnd();
+                    // Display the content.
+                    //Console.WriteLine(responseFromServer);
+
+                    if (((HttpWebResponse)response).StatusDescription == "OK")
+                    {
+                        responseFromHttpWeb = responseFromHttpWeb.ToUpper();
+                        if (responseFromHttpWeb.Contains("INVALID USER") || responseFromHttpWeb.Contains("WRONG USER"))
+                        {
+                            Dispatcher.BeginInvoke((Action)(() =>
+                            {
+                                AccTest_Txtblk.Text = "Sorry! Account is invalid :(";
+                            }));
+                        }
+                        else if (responseFromHttpWeb.Contains("EMPTY SMS"))
+                        {
+                            Dispatcher.BeginInvoke((Action)(() =>
+                            {
+                                AccTest_Txtblk.Text = "Congrats! Account is valid :)";
+                            }));
+                        }
+                        else
+                        {
+                            Dispatcher.BeginInvoke((Action)(() =>
+                            {
+                                AccTest_Txtblk.Text = "Not sure!! :(";
+                            }));
+                            Show_LogTextblock(responseFromHttpWeb);
+                            Write_logFile("NOT SURE!! " + responseFromHttpWeb);
+                        }
+                    }
+                    else
+                    {
+                        Dispatcher.BeginInvoke((Action)(() =>
+                        {
+                            AccTest_Txtblk.Text = "Server not OK!";
+                        }));
+                        Show_LogTextblock(responseFromHttpWeb);
+                        Write_logFile("Server not OK! " + responseFromHttpWeb);
+                    }
+
+                    // Clean up the streams.
+                    reader.Close();
+                    dataStream.Close();
+                    response.Close();
+
+                    reader.Dispose();
+                    dataStream.Dispose();
+                    response.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Dispatcher.BeginInvoke((Action)(() =>
+                    {
+                        AccTest_Txtblk.Text = "Network error! :(";
+                    }));
+                }
+            }
+            else
+            {
+                Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    AccTest_Txtblk.Text = "Network unplugged! :(";
+                }));
+            }
+        }
+
         private void ITXAdditional_checkbox_Unchecked_1(object sender, RoutedEventArgs e)
         {
             Send_ITX_AdditionalMsg = false;
@@ -1574,7 +1711,7 @@ namespace SMS_System
                 Write_logFile("Button clicked (Send SMS).");/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 SentMsgCount = 0;
                 SMSData_Status = 0;
-                SMSDestination_Status = 0;
+                //SMSDestination_Status = 0;
                 Query_Only = false;
                 SubtractiveDataDay = 0;
                 Send_Status = 0;

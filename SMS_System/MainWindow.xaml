@@ -17,7 +17,7 @@
 
 
             <TextBlock x:Name="clock_textblock" HorizontalAlignment="Left" Margin="164,10,0,0" TextWrapping="Wrap" Text="Clock" VerticalAlignment="Top" RenderTransformOrigin="0.32,0.312" Width="75" Height="16"/>
-            <TextBox x:Name="Alarm_time_textbox" Text="8:30:00 AM" MouseEnter="Alarm_time_textbox_MouseEnter" MouseLeave="Alarm_time_textbox_MouseLeave" HorizontalAlignment="Left" Height="23" Margin="485,130,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="87" TextChanged="TextBox_TextChanged_1" RenderTransformOrigin="2.837,0.348"/>
+            <TextBox x:Name="Alarm_time_textbox" MouseEnter="Alarm_time_textbox_MouseEnter" MouseLeave="Alarm_time_textbox_MouseLeave" HorizontalAlignment="Left" Height="23" Margin="485,130,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="87" TextChanged="TextBox_TextChanged_1" RenderTransformOrigin="2.837,0.348"/>
             <TextBlock x:Name="textblock1" HorizontalAlignment="Left" Margin="112,133,0,0" TextWrapping="Wrap" 
                        Text="Enter the SMS trigger time in the box at right: (e.g: 6:30:00 AM)" FontWeight="Bold" VerticalAlignment="Top" Width="371" Height="16"/>
 
@@ -46,7 +46,7 @@
                 </Label.Background>
             </Label>
 
-            <Label x:Name="report_label" Content="Settings" MouseDoubleClick="report_label_MouseDoubleClick_1"  MouseEnter="report_label_MouseEnter_1"  MouseLeave="report_label_MouseLeave_1" HorizontalAlignment="Left" Margin="613,49,0,0" VerticalAlignment="Top" FontWeight="Bold" Foreground="Azure" BorderBrush="#FFD81E1E" Height="26" Width="67">
+            <Label x:Name="report_label" Content="Options" MouseDoubleClick="report_label_MouseDoubleClick_1"  MouseEnter="report_label_MouseEnter_1"  MouseLeave="report_label_MouseLeave_1" HorizontalAlignment="Left" Margin="613,49,0,0" VerticalAlignment="Top" FontWeight="Bold" Foreground="Azure" BorderBrush="#FFD81E1E" Height="26" Width="67">
                 <Label.Background>
                     <LinearGradientBrush EndPoint="0.5,1" MappingMode="RelativeToBoundingBox" StartPoint="0.5,0">
                         <GradientStop x:Name="_bg_report" Color="Lime"  Offset="1"/>
@@ -124,7 +124,7 @@
                 </StackPanel>
             </Popup>
 
-            <Popup Name="Popup10_Settings" HorizontalAlignment="Left" Placement="Mouse"  VerticalAlignment="Top" IsOpen="False" Width="340" Height="465">
+            <Popup Name="Popup10_Settings" HorizontalAlignment="Left" Placement="Mouse"  VerticalAlignment="Top" IsOpen="False" Width="340" Height="500">
                 <Grid Background="LightSkyBlue">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"/>
@@ -138,7 +138,7 @@
                                    TextWrapping="Wrap" FontSize="11" Margin="10,0,0,0" />
                         
                         <TextBox x:Name="report_textbox" Height="37" Margin="10" TextWrapping="Wrap" TextChanged="report_textbox_TextChanged_1"/>
-                        <CheckBox x:Name="error_checkbox" Content="Check Error" IsChecked="True" Checked="error_checkbox_Checked_1" Unchecked="error_checkbox_Unchecked_1"  VerticalAlignment="Top" Height="24" Margin="10,0,51,0"/>
+                        <CheckBox x:Name="error_checkbox" Content="Check Error" Checked="error_checkbox_Checked_1" Unchecked="error_checkbox_Unchecked_1"  VerticalAlignment="Top" Height="24" Margin="10,0,51,0"/>
                         <CheckBox x:Name="ITX_error_Send" Content="Send Error Report" IsChecked="False" Checked="ITX_Error_Send_Checked_1" Unchecked="ITX_Error_Send_Unchecked_1" VerticalAlignment="Top" Height="16" Margin="10,0,51,0"/>
                         <Grid  HorizontalAlignment="Left" Margin="10,0,0,5" Width="279">
                             <Grid.ColumnDefinitions>
@@ -147,12 +147,13 @@
                                 <ColumnDefinition Width="10"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Give ICX vs. ITX incoming traffic acceptance error limit (in percentage):" TextWrapping="Wrap"/>
-                            <TextBox Grid.Column="1" x:Name="error_parcent_textbox" TextChanged="error_parcent_textchanged_1" Text="0.3" Height="25"/>
-                            <TextBlock Grid.Column="2" Text="%"/>
+                            <TextBox Grid.Column="1" x:Name="error_parcent_textbox" TextChanged="error_parcent_textchanged_1" Height="25"/>
+                            <TextBlock Grid.Column="2" Text="%" Margin="0,5,0,-5"/>
                         </Grid>
                     </StackPanel>
                     <Grid Grid.Row="1" Background="Wheat" HorizontalAlignment="Left" Width="340">
                         <Grid.RowDefinitions>
+                            <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
@@ -166,7 +167,7 @@
                             </Grid.ColumnDefinitions>
                         
                         <TextBlock Grid.Column="0" HorizontalAlignment="Right" Text="Username:"/>
-                        <TextBox Grid.Column="1" x:Name="user_name" TextChanged="user_name_TextChanged_1" Text="central.billing"/>
+                        <TextBox Grid.Column="1" x:Name="user_name" TextChanged="user_name_TextChanged_1"/>
                         </Grid>
                         <Grid Grid.Row="2">
                             <Grid.ColumnDefinitions>
@@ -174,9 +175,17 @@
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
                             <TextBlock HorizontalAlignment="Right" Grid.Column="0" Text="Password:"/>
-                            <PasswordBox Grid.Column="1" x:Name="acc_psw" PasswordChar="*" Password="Billing$2019" PasswordChanged="acc_psw_PasswordChanged_1"/>
+                            <PasswordBox Grid.Column="1" x:Name="acc_psw" PasswordChar="*" PasswordChanged="acc_psw_PasswordChanged_1"/>
                         </Grid>
-                        <CheckBox Grid.Row="3" x:Name="Account_check" Content="If checked, system will check sms credit each time"  IsChecked="True" Checked="Account_check_Checked_1" Unchecked="Account_check_Unchecked_1" HorizontalAlignment="Left"/>
+                        <Grid Grid.Row="3" Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="AccTest_btn" Grid.Column="0" Width="100" Content="Test Account" Click="AccTest_btn_Click"/>
+                            <TextBlock x:Name="AccTest_Txtblk" Grid.Column="1"/>
+                        </Grid>
+                        <CheckBox Grid.Row="4" x:Name="Account_check" Content="If checked, system will check sms credit each time" Checked="Account_check_Checked_1" Unchecked="Account_check_Unchecked_1" HorizontalAlignment="Left"/>
                     </Grid>
                     <Grid Grid.Row="2" Background="#FFA7EAA7">
                         <Grid.RowDefinitions>
@@ -195,7 +204,7 @@
                                 <ColumnDefinition  Width="auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="SMS trigger time: " Margin="10,10"/>
-                            <TextBox x:Name="AdditionalMsgTime_txtbox" Grid.Column="1" Text="6:00:00 PM" Margin="10,8" IsEnabled="False" TextChanged="AdditionalMsgTime_txtbox_TextChanged_1"/>
+                            <TextBox x:Name="AdditionalMsgTime_txtbox" Grid.Column="1" Margin="10,8" IsEnabled="False" TextChanged="AdditionalMsgTime_txtbox_TextChanged_1"/>
                             <TextBlock Grid.Column="2" Text="or click here: " Margin="0,10"/>
                             <Button x:Name="Additional_send_btn" Grid.Column="3" Content="Send"  IsEnabled="False" Margin="0,5,5,5" Click="Additional_send_btn_Click_1"/>
                         </Grid>
@@ -220,7 +229,7 @@
 
             <Label Content="SMS can be triggered in 2 ways: by setting the action time or by clicking the 'Send SMS' button. 'Query' button is not needed to send SMS.&#xA;&#x9;&#x9;&#x9;To send SMS multiple times in a day, click the 'Reset' button, then send SMS again." 
                    HorizontalAlignment="Center"  Margin="10,95,10,0" VerticalAlignment="Top" Width="670" FontSize="10" Height="35" FontWeight="Bold" TextOptions.TextFormattingMode="Display"/>
-            <Image x:Name="logo_img" Source="Image/BTCL-logo.png"  HorizontalAlignment="Left" Height="84" Margin="242,10,0,0" VerticalAlignment="Top" Width="170" Stretch="Fill"/>
+            <Image x:Name="logo_img" Source="Image/BTCL-logo2.png"  HorizontalAlignment="Left" Height="84" Margin="242,10,0,0" VerticalAlignment="Top" Width="170" Stretch="Fill"/>
             <Image x:Name="logo_" Source="Image/Icon_logo.png"  HorizontalAlignment="Left" Height="79" Margin="0,10,0,0" VerticalAlignment="Top" Width="82" Stretch="Fill"/>
 
 
@@ -235,7 +244,7 @@
             <Button x:Name="calender_btn" Content="Enable Calender" Click="calender_btn_Click_1" MouseEnter="calender_btn_MouseEnter_1" MouseLeave="calender_btn_MouseLeave_1" HorizontalAlignment="Left" Margin="450,10,0,0" VerticalAlignment="Top" Width="102" Height="24"/>
             <DatePicker x:Name="_date_picker" SelectedDateChanged="_date_picker_SelectedDateChanged_1" IsEnabled="False" HorizontalAlignment="Left" Margin="450,36,0,0" VerticalAlignment="Top" Height="24" Width="102" />
             <TextBlock x:Name="_version_txtblk" TextAlignment="Center"  HorizontalAlignment="Center" Margin="242,514,166,0" TextWrapping="Wrap" VerticalAlignment="Center" Width="282" Height="30" 
-                       FontSize="9"><Run Text="BTCL &#169; 2017 All Rights Reserved."/><LineBreak/><Run Text="Version: 9.7.0.85"/></TextBlock>
+                       FontSize="9"><Run Text="BTCL &#169; 2017 All Rights Reserved."/><LineBreak/><Run x:Name="versionNumber"/></TextBlock>
         </Grid>
     </ScrollViewer>
 
