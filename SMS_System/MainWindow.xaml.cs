@@ -1444,6 +1444,7 @@ namespace SMS_System
                 _date_picker.SelectedDate = DateTime.Today.Subtract(TimeSpan.FromDays(1));
 
                 Show_LogTextblock("Calender is disabled.");
+                Show_LogTextblock("Selected day is yesterday.");
             }
         }
 
@@ -1456,8 +1457,8 @@ namespace SMS_System
                 Show_LogTextblock("Selected date is " + SubtractiveDataDay + " days before today.");
             else if (SubtractiveDataDay == 0)
                 Show_LogTextblock("Selected day is today.");
-            else if (SubtractiveDataDay == 1)
-                Show_LogTextblock("Selected day is yesterday.");
+            //else if (SubtractiveDataDay == 1)
+            //    Show_LogTextblock("Selected day is yesterday.");
         }
 
 
