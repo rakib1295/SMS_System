@@ -59,6 +59,7 @@ namespace SMS_System
         string reportingPhnNumString = "";
         bool _error_checkOrNot = true;
         bool _account_check = true;
+        String title = "";
 
         Dictionary<String, String> SMSData = new Dictionary<String, String>();
         List <String> Dest_ANS = new List<String>();
@@ -91,6 +92,8 @@ namespace SMS_System
             Application.Current.MainWindow.Closing += MainWindow_Closing;
             Application.Current.MainWindow.Loaded += MainWindow_Loaded;
 
+            title = Title;
+
 #if !DEBUG
             versionNumber.Text = "Version: " + ApplicationDeployment.CurrentDeployment.CurrentVersion.ToString(4);
 #endif
@@ -113,7 +116,7 @@ namespace SMS_System
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
-            if (MessageBox.Show("Do you want to close the app?", Title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
+            if (MessageBox.Show("Do you want to close the app?", title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
             {
                 e.Cancel = true;
             }
@@ -192,18 +195,19 @@ namespace SMS_System
         {
             return
                 "\n  1. Please at first browse text file for destination phone numbers if browse button blinks. Each line of text file format: PHONE-NUMBER<Space>GROUP<Space>Person-Name(optional).\n(e.g. 01XXXXXXXXX ICX Mr. Abc)." +
-                "\n  2. Please make sure your PC is connected to oracle billing database." +
-                "\n  3. Please make sure your PC is connected to internet." +
-                "\n  4. Be careful about SMS credit balance and expiration date, you can check it by logging in teletalk bulksms portal:- http://bulksms.teletalk.com.bd/." +
-                "\n  5. Each log data will be saved to this directory:- C:\\Users\\Public\\SMSApp_Log_" + DateTime.Now.Year.ToString() + ".txt." +
-                "\n  6. Adjust the trigger time at the box above if needed (Default time is 9:00:00 AM)." +
-                "\n  7. SMS will not be sent twice a day, if you need to send twice then click 'Reset' button." +
-                "\n  8. Check or uncheck any message group, if you need to send SMS to any specific group." +
-                "\n  9. If you need to send data for a specific date, at first click the 'Reset' button then enable calender. Then select a date and click 'Send SMS' button." +
-                "\n  10. If you need to query the sms contents without sending sms for any specific date, select a date and click the 'Query Traffic Data' button. (By default yesterday's data will be shown.)" +
-                "\n  11. To stop any process or running thread or work, reset the app by clicking 'Reset' button." +
-                "\n  12. At settings wizard, set ICX vs ITX incoming traffic difference acceptance limit in percentage (%) and set phone numbers to send error report if needed. And also teletalk account settings can be set." +
-                "\n  13. If Additional ITX message is needed for current (today's) date, then enable 'ITX Additional Message' and adjust the trigger time and give phone numbers.";
+                "\n  2. While adding or removing any phone number, you have to browse file again." +
+                "\n  3. Please make sure your PC is connected to oracle billing database." +
+                "\n  4. Please make sure your PC is connected to internet." +
+                "\n  5. Be careful about SMS credit balance and expiration date, you can check it by logging in teletalk bulksms portal:- http://bulksms.teletalk.com.bd/." +
+                "\n  6. Each log data will be saved to this directory:- C:\\Users\\Public\\SMSApp_Log_" + DateTime.Now.Year.ToString() + ".txt." +
+                "\n  7. Adjust the trigger time at the box above if needed (Default time is 9:00:00 AM)." +
+                "\n  8. SMS will not be sent twice a day, if you need to send twice then click 'Reset' button." +
+                "\n  9. Check or uncheck any message group, if you need to send SMS to any specific group." +
+                "\n  10. If you need to send data for a specific date, at first click the 'Reset' button then enable calender. Then select a date and click 'Send SMS' button." +
+                "\n  11. If you need to query the sms contents without sending sms for any specific date, select a date and click the 'Query Traffic Data' button. (By default yesterday's data will be shown.)" +
+                "\n  12. To stop any process or running thread or work, reset the app by clicking 'Reset' button." +
+                "\n  13. At settings wizard, set ICX vs ITX incoming traffic difference acceptance limit in percentage (%) and set phone numbers to send error report if needed. And also teletalk account settings can be set." +
+                "\n  14. If Additional ITX message is needed for current (today's) date, then enable 'ITX Additional Message' and adjust the trigger time and give phone numbers.";
         }
 
         private void Browse_Btn_Animation()
@@ -249,14 +253,21 @@ namespace SMS_System
 
         void Write_logFile(String str)///////////////////////////////////////////////////////////////////////////////////////////////////
         {
+            string _dir = "C:\\Users\\Public\\" + title + " Log\\" + DateTime.Now.Year.ToString() + "\\" + DateTime.Now.ToString("MMMM");
             try
             {
                 lock (thisLock)
                 {
-                    System.IO.StreamWriter file = new System.IO.StreamWriter(@"c:\\Users\\Public\\SMSApp_Log_" + DateTime.Now.Year.ToString() + ".txt", true);
+                    if (!Directory.Exists(_dir))
+                    {
+                        Directory.CreateDirectory(_dir);
+                    }
 
-                    file.WriteLine(DateTime.Now.ToString() + ":- " + str);
-                    file.Close();
+                    System.IO.StreamWriter Logfile = new System.IO.StreamWriter(_dir + "\\" + title + "_" + DateTime.Now.ToString("dd") + "_" +
+                        DateTime.Now.ToString("MMM") + "_" + DateTime.Now.ToString("yy") + ".log", true);
+
+                    Logfile.WriteLine(DateTime.Now.ToString() + ":- " + str);
+                    Logfile.Close();
                 }
             }
             catch (Exception ex)
@@ -286,9 +297,9 @@ namespace SMS_System
                 SMSData_Status = 0;
                 //SMSDestination_Status = 0;
                 Send_Status = 0;
-                NumberofDestination = 0;
+                //NumberofDestination = 0;
 
-                SubtractiveDataDay = 1;
+                //SubtractiveDataDay = 1;
                 _date_picker.IsEnabled = false;
                 calender_btn.Content = "Enable Calender";
                 _date_picker.SelectedDate = DateTime.Today.Subtract(TimeSpan.FromDays(1));
@@ -430,7 +441,7 @@ namespace SMS_System
                     {
                         cmd.CommandText = "SELECT (INC.Incomming || OUTG.Outgoing) SMSCONTENT FROM " +
                             "(select 1 sl, ('IGW traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd/mm') || ' In: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') Incomming from cdr_inter_itx_stat t " +
-                            "where  t.settle_scene = 'SC101' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
+                            "where  t.transit_type in ('23','24','25') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
                             "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) INC " +
                             "INNER join (select 1 sl,(' and Out: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') Outgoing from cdr_inter_itx_stat t " +
                             "where  t.TRANSIT_TYPE in ('20','21','22') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) OUTG on INC.sl=OUTG.sl";
@@ -615,6 +626,10 @@ namespace SMS_System
                                     }
                                 }
                             }
+                            else
+                            {
+                                Show_LogTextblock("No phone number has been given yet.");
+                            }
                         }
                     }
                     else if (!Query_Only && _reset == false)
@@ -633,7 +648,7 @@ namespace SMS_System
             cmd.CommandType = CommandType.Text;
             cmd.Connection = conn;
 
-            cmd.CommandText = "select sum(t.DURATION_FLOAT) MINUTES from cdr_inter_itx_stat t where t.billingcycle = TO_CHAR((sysdate- " + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate- " + SubtractiveDataDay + "),'dd') and t.settle_scene = 'SC101'";
+            cmd.CommandText = "select sum(t.DURATION_FLOAT) MINUTES from cdr_inter_itx_stat t where t.billingcycle = TO_CHAR((sysdate- " + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate- " + SubtractiveDataDay + "),'dd') and t.transit_type in ('23','24','25')";
             double itx_val = 0;
             OracleDataReader reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -776,7 +791,7 @@ namespace SMS_System
                         Dispatcher.BeginInvoke((Action)(() =>
                         {
                             Browse_Btn_Animation();
-                            MessageBox.Show(ex.Message + " Please browse a text file for destination phone numbers. Each line of text file format: PHONE-NUMBER<Space>GROUP<Space>Person-Name(optional).\nAs for example:\n01XXXXXXXXX ANS Mr. Abc\n01XXXXXXXXX ICX\n01XXXXXXXXX ITX Mrs. Xyz", Title);
+                            MessageBox.Show(ex.Message + " Please browse a text file for destination phone numbers. Each line of text file format: PHONE-NUMBER<Space>GROUP<Space>Person-Name(optional).\nAs for example:\n01XXXXXXXXX ANS Mr. Abc\n01XXXXXXXXX ICX\n01XXXXXXXXX ITX Mrs. Xyz", title, MessageBoxButton.OK, MessageBoxImage.Error);
                         }));
                     }
                     else
@@ -785,7 +800,7 @@ namespace SMS_System
                         Dispatcher.BeginInvoke((Action)(() =>
                         {
                             Browse_Btn_Animation();
-                            MessageBox.Show("Wrong text file selected. Please browse the correct one. Each line of text file format: PHONE-NUMBER<Space>GROUP<Space>Person-Name(optional).\nAs for example:\n01XXXXXXXXX ANS Mr. Abc\n01XXXXXXXXX ICX\n01XXXXXXXXX ITX Mrs. Xyz", Title);
+                            MessageBox.Show("Wrong text file selected. Please browse the correct one. Each line of text file format: PHONE-NUMBER<Space>GROUP<Space>Person-Name(optional).\nAs for example:\n01XXXXXXXXX ANS Mr. Abc\n01XXXXXXXXX ICX\n01XXXXXXXXX ITX Mrs. Xyz", title, MessageBoxButton.OK, MessageBoxImage.Error);
                         }));
                     }
                 }
@@ -841,9 +856,16 @@ namespace SMS_System
                 Show_LogTextblock("SMS sending, please wait..... .... ... .. .");
 
                 log_status_print = false; // "SMS already sent today" this message will be shown in log if manually send message when retrying. This status is using to show it only once, not for each message
+                NumberofDestination = 0;
+                if(_ans)
+                    NumberofDestination += Dest_ANS.Count;
+                if (_icx)
+                    NumberofDestination += Dest_ICX.Count;
+                if (_itx)
+                    NumberofDestination += Dest_ITX.Count;
 
                 if (_ans)
-                {
+                {                    
                     foreach (var num in Dest_ANS)
                     {
                         if (num != "")
@@ -1071,12 +1093,12 @@ namespace SMS_System
             {
                 Show_LogTextblock("SMS already sent today: " + DateTime.Now.ToShortDateString());
                 Write_logFile("SMS already sent today.");
-                MessageBox.Show("SMS already sent for today. If you want to send again, at first click 'Reset' button.", Title);
+                MessageBox.Show("SMS already sent for today. If you want to send again, at first click 'Reset' button.", title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
                 if (MessageBox.Show("Do you really want to send message for traffic date: " + DateTime.Today.Subtract(TimeSpan.FromDays(SubtractiveDataDay)).ToShortDateString() + "?",
-                    Title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                    title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     SentMsgCount = 0;
                     SMSData_Status = 0;
@@ -1091,7 +1113,7 @@ namespace SMS_System
                     else
                     {
                         Show_LogTextblock("No message group is checked.");
-                        MessageBox.Show("Please select at least one message group to send SMS.", Title);
+                        MessageBox.Show("Please select at least one message group to send SMS.", title, MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -1113,14 +1135,14 @@ namespace SMS_System
             else
             {
                 Show_LogTextblock("No message group is checked.");
-                MessageBox.Show("Please select at least one message group to see the traffic data.", Title);
+                MessageBox.Show("Please select at least one message group to see the traffic data.", title, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
 
         private void Button_Click_Reset(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("Do you really want to reset today's status or stop any process?", Title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            if (MessageBox.Show("Do you really want to reset today's status or stop any process?", title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 _reset = true;
                 try
@@ -1707,7 +1729,7 @@ namespace SMS_System
 
         private void Additional_send_btn_Click_1(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("Do you really want to send today's ITX traffic data?", Title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            if (MessageBox.Show("Do you really want to send today's ITX traffic data?", title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 Write_logFile("Button clicked (Send SMS).");/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 SentMsgCount = 0;
@@ -1724,7 +1746,7 @@ namespace SMS_System
                 }
                 else
                 {
-                    MessageBox.Show("Please give phone numbers.", Title);
+                    MessageBox.Show("Please give phone numbers.", title, MessageBoxButton.OK, MessageBoxImage.Error);
                     Write_logFile("No phone number to send additional ITX traffic.");
                     Show_LogTextblock("No phone number to send additional ITX traffic.");
                 }
