@@ -55,7 +55,8 @@ namespace SMS_System
         double incoming_Diff_actual = 0;
         double outgoing_Diff_actual = 0;
         double incoming_acceptance_diff = 0.3; //%
-        string AdditionalITXPhnNumString = ""; 
+        string AdditionalITXPhnNumString = "";
+        string CompareMsgPhnNumberString = "";
         string reportingPhnNumString = "";
         bool _error_checkOrNot = true;
         bool _account_check = true;
@@ -112,6 +113,8 @@ namespace SMS_System
             AdditionalMsgPhnNumber_txtbox.Text = Properties.Settings.Default.ITXAddPhnNumbers;
             Account_check.IsChecked = Properties.Settings.Default.CheckCredit;
             Alarm_time_textbox.Text = Properties.Settings.Default.SMSTime;
+            CompareSMS_checkbox.IsChecked = Properties.Settings.Default.SendCompSMS;
+            CompareMsgPhnNumber_txtbox.Text = Properties.Settings.Default.CompPhnNumbers;
         }
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
@@ -133,6 +136,8 @@ namespace SMS_System
                 Properties.Settings.Default.ITXAddPhnNumbers = AdditionalMsgPhnNumber_txtbox.Text;
                 Properties.Settings.Default.CheckCredit = (bool)Account_check.IsChecked;
                 Properties.Settings.Default.SMSTime = Alarm_time_textbox.Text;
+                Properties.Settings.Default.SendCompSMS = (bool)CompareSMS_checkbox.IsChecked;
+                Properties.Settings.Default.CompPhnNumbers = CompareMsgPhnNumber_txtbox.Text;
 
                 Properties.Settings.Default.Save();
             }
@@ -357,6 +362,7 @@ namespace SMS_System
         }
 
         bool Send_ITX_AdditionalMsg = false;
+        bool Send_CompareSMS = false;
 
         private async void ThreadHandle(String _generator)
         {
@@ -410,6 +416,33 @@ namespace SMS_System
                             SMSData.Add("ANS", reader["SMSCONTENT"].ToString());
                         }
                         reader.Dispose();
+
+                        if(Send_CompareSMS)
+                        {
+                            cmd.CommandText = "SELECT (IDDALL.IDD || DOMALL.DOM) SMSCONTENT FROM " +
+    "(SELECT 1 sl, (IDDINC.IDDIncomming || IDDOUTG.IDDOutgoing) IDD FROM " +
+    "(select 1 sl, ('ANS traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd/mm') || ' Intl In: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') IDDIncomming from cdr_inter_ans_stat t " +
+    "where  t.transit_type = '32' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
+    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) IDDINC " +
+    "INNER join (select 1 sl,(' and Intl Out: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm, ') IDDOutgoing from cdr_inter_ans_stat t " +
+    "where  t.transit_type = '30' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
+    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) IDDOUTG on IDDINC.sl=IDDOUTG.sl) IDDALL " +
+    "INNER JOIN (SELECT 1 sl, (DMOUTG.DMOutgoing || DMINC.DMIncomming) DOM FROM " +
+    "(select 1 sl, (' Dmstc Out: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') DMOutgoing from cdr_inter_ans_stat t " +
+    "where  t.transit_type = '31' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) DMOUTG " +
+    "INNER join (select 1 sl,(' and In : ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') DMIncomming from cdr_inter_ans_stat t " +
+    "where  t.transit_type = '33' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) DMINC on DMOUTG.sl=DMINC.sl) DOMALL ON DOMALL.sl= IDDALL.sl";
+
+
+                            reader = cmd.ExecuteReader();
+
+
+                            while (reader.Read())
+                            {
+                                SMSData.Add("ANS_COMP", reader["SMSCONTENT"].ToString());
+                            }
+                            reader.Dispose();
+                        }
                     }
 
                     if (_icx)
@@ -435,6 +468,31 @@ namespace SMS_System
                             SMSData.Add("ICX", reader["SMSCONTENT"].ToString());
                         }
                         reader.Dispose();
+
+                        if(Send_CompareSMS)
+                        {
+                            cmd.CommandText = "SELECT (IDDALL.INTALL || DOMALL.DOM) SMSCONTENT FROM " +
+    "(SELECT 1 sl,(INC.Incomming || OUTG.Outgoing) INTALL FROM " +
+    "(select 1 sl, ('ICX traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd/mm') || ' Intl In: ' || to_char(round(sum(t.duration)/60,0),'999,999,999,999')|| ' pm') Incomming from cdr_inter_icx_stat t " +
+    "where  t.transit_type = '11' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
+    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) INC " +
+    "INNER join (select 1 sl,(' and Out: ' || to_char(round(sum(t.duration)/60,0),'999,999,999,999')|| ' pm, ') Outgoing from cdr_inter_icx_stat t " +
+    "where  t.transit_type = '12' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
+    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) OUTG on INC.sl=OUTG.sl) IDDALL " +
+    "INNER join (select 1 sl,(' DOM : ' || to_char(round(sum(t.duration)/60,0),'999,999,999,999')|| ' pm') DOM from cdr_inter_icx_stat t " +
+    "where  t.transit_type = '10' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
+    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) DOMALL ON DOMALL.sl = IDDALL.sl";
+
+                            reader = cmd.ExecuteReader();
+
+
+                            while (reader.Read())
+                            {
+                                string s = reader.GetName(0);
+                                SMSData.Add("ICX_COMP", reader["SMSCONTENT"].ToString());
+                            }
+                            reader.Dispose();
+                        }
                     }
 
                     if (_itx)
@@ -454,6 +512,25 @@ namespace SMS_System
                             SMSData.Add("ITX", reader["SMSCONTENT"].ToString());
                         }
                         reader.Dispose();
+
+                        if(Send_CompareSMS)
+                        {
+                            cmd.CommandText = "SELECT (INC.Incomming || OUTG.Outgoing) SMSCONTENT FROM " +
+    "(select 1 sl, ('IGW traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd/mm') || ' In: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') Incomming from cdr_inter_itx_stat t " +
+    "where  t.transit_type in ('23','24','25') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
+    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) INC " +
+    "INNER join (select 1 sl,(' and Out: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') Outgoing from cdr_inter_itx_stat t " +
+    "where  t.TRANSIT_TYPE in ('20','21','22') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) OUTG on INC.sl=OUTG.sl";
+
+                            reader = cmd.ExecuteReader();
+
+
+                            while (reader.Read())
+                            {
+                                SMSData.Add("ITX_COMP", reader["SMSCONTENT"].ToString());
+                            }
+                            reader.Dispose();
+                        }
                     }
 
 
@@ -829,6 +906,7 @@ namespace SMS_System
 
 
         String[] AdditionalITX_PhnNum = new String[10];
+        String[] CompareSMS_PhnNum = new String[10];
         private void SendITXAdditionalReport()
         {
             AdditionalITX_PhnNum = AdditionalITXPhnNumString.Split(',');
@@ -855,14 +933,38 @@ namespace SMS_System
             {
                 Show_LogTextblock("SMS sending, please wait..... .... ... .. .");
 
+                
+                if (Send_CompareSMS)
+                {
+                    CompareSMS_PhnNum = CompareMsgPhnNumberString.Split(',');
+                }
+
                 log_status_print = false; // "SMS already sent today" this message will be shown in log if manually send message when retrying. This status is using to show it only once, not for each message
                 NumberofDestination = 0;
-                if(_ans)
+                if (_ans)
+                {
                     NumberofDestination += Dest_ANS.Count;
+                    if(Send_CompareSMS)
+                    {
+                        NumberofDestination += CompareSMS_PhnNum.Length;
+                    }
+                }
                 if (_icx)
+                {
                     NumberofDestination += Dest_ICX.Count;
+                    if (Send_CompareSMS)
+                    {
+                        NumberofDestination += CompareSMS_PhnNum.Length;
+                    }
+                }
                 if (_itx)
+                {
                     NumberofDestination += Dest_ITX.Count;
+                    if (Send_CompareSMS)
+                    {
+                        NumberofDestination += CompareSMS_PhnNum.Length;
+                    }
+                }
 
                 if (_ans)
                 {                    
@@ -870,6 +972,15 @@ namespace SMS_System
                     {
                         if (num != "")
                             HttpCallforSMS(num, "ANS", SMSData["ANS"]); //sending for ANS
+                    }
+
+                    if (Send_CompareSMS)
+                    {
+                        foreach (var num in CompareSMS_PhnNum)
+                        {
+                            if (num != "")
+                                HttpCallforSMS(num, "ANS_COMPARE", SMSData["ANS_COMP"]); //sending for ANS
+                        }
                     }
                 }
 
@@ -880,6 +991,15 @@ namespace SMS_System
                         if (num != "")
                             HttpCallforSMS(num, "ICX", SMSData["ICX"]); //sending for ICX
                     }
+
+                    if (Send_CompareSMS)
+                    {
+                        foreach (var num in CompareSMS_PhnNum)
+                        {
+                            if (num != "")
+                                HttpCallforSMS(num, "ICX_COMPARE", SMSData["ICX_COMP"]); //sending for ANS
+                        }
+                    }
                 }
 
                 if (_itx)
@@ -888,6 +1008,15 @@ namespace SMS_System
                     {
                         if (num != "")
                             HttpCallforSMS(num, "ITX", SMSData["ITX"]); //sending for ITX
+                    }
+
+                    if (Send_CompareSMS)
+                    {
+                        foreach (var num in CompareSMS_PhnNum)
+                        {
+                            if (num != "")
+                                HttpCallforSMS(num, "ITX_COMPARE", SMSData["ITX_COMP"]); //sending for ANS
+                        }
                     }
                 }
             }
@@ -1370,6 +1499,7 @@ namespace SMS_System
 
         private void report_btn_Click_1(object sender, RoutedEventArgs e)
         {
+            Properties.Settings.Default.Save();
             Popup10_Settings.IsOpen = false;
         }
 
@@ -1710,6 +1840,27 @@ namespace SMS_System
                     AccTest_Txtblk.Text = "Network unplugged! :(";
                 }));
             }
+        }
+
+        private void CompareSMS_checkbox_Checked(object sender, RoutedEventArgs e)
+        {
+            Send_CompareSMS = true;
+            Show_LogTextblock("Compare SMS enabled.");
+            Write_logFile("Compare SMS enabled.");
+            CompareMsgPhnNumber_txtbox.IsEnabled = true;
+        }
+
+        private void CompareSMS_checkbox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            Send_CompareSMS = false;
+            Show_LogTextblock("Compare SMS disabled.");
+            Write_logFile("Compare SMS disabled.");
+            CompareMsgPhnNumber_txtbox.IsEnabled = false;
+        }
+
+        private void CompareMsgPhnNumber_txtbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            CompareMsgPhnNumberString = CompareMsgPhnNumber_txtbox.Text;
         }
 
         private void ITXAdditional_checkbox_Unchecked_1(object sender, RoutedEventArgs e)
