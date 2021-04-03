@@ -125,22 +125,27 @@ namespace SMS_System
             }
             else
             {
-                Properties.Settings.Default.ErrorReportPhnNumbers = report_textbox.Text;
-                Properties.Settings.Default.CheckError = (bool)error_checkbox.IsChecked;
-                Properties.Settings.Default.SendErrorReport = (bool)ITX_error_Send.IsChecked;
-                Properties.Settings.Default.ErrorLimit = error_parcent_textbox.Text;
-                Properties.Settings.Default.UserName = user_name.Text;
-                Properties.Settings.Default.Password = acc_psw.Password;
-                Properties.Settings.Default.SendITXAdd = (bool)ITXAdditional_checkbox.IsChecked;
-                Properties.Settings.Default.SMSTimeAdd = AdditionalMsgTime_txtbox.Text;
-                Properties.Settings.Default.ITXAddPhnNumbers = AdditionalMsgPhnNumber_txtbox.Text;
-                Properties.Settings.Default.CheckCredit = (bool)Account_check.IsChecked;
-                Properties.Settings.Default.SMSTime = Alarm_time_textbox.Text;
-                Properties.Settings.Default.SendCompSMS = (bool)CompareSMS_checkbox.IsChecked;
-                Properties.Settings.Default.CompPhnNumbers = CompareMsgPhnNumber_txtbox.Text;
-
-                Properties.Settings.Default.Save();
+                SaveSettings();
             }
+        }
+
+        private void SaveSettings()
+        {
+            Properties.Settings.Default.ErrorReportPhnNumbers = report_textbox.Text;
+            Properties.Settings.Default.CheckError = (bool)error_checkbox.IsChecked;
+            Properties.Settings.Default.SendErrorReport = (bool)ITX_error_Send.IsChecked;
+            Properties.Settings.Default.ErrorLimit = error_parcent_textbox.Text;
+            Properties.Settings.Default.UserName = user_name.Text;
+            Properties.Settings.Default.Password = acc_psw.Password;
+            Properties.Settings.Default.SendITXAdd = (bool)ITXAdditional_checkbox.IsChecked;
+            Properties.Settings.Default.SMSTimeAdd = AdditionalMsgTime_txtbox.Text;
+            Properties.Settings.Default.ITXAddPhnNumbers = AdditionalMsgPhnNumber_txtbox.Text;
+            Properties.Settings.Default.CheckCredit = (bool)Account_check.IsChecked;
+            Properties.Settings.Default.SMSTime = Alarm_time_textbox.Text;
+            Properties.Settings.Default.SendCompSMS = (bool)CompareSMS_checkbox.IsChecked;
+            Properties.Settings.Default.CompPhnNumbers = CompareMsgPhnNumber_txtbox.Text;
+
+            Properties.Settings.Default.Save();
         }
 
         public bool Error_CheckOrNot
@@ -1499,7 +1504,7 @@ namespace SMS_System
 
         private void report_btn_Click_1(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.Save();
+            SaveSettings();
             Popup10_Settings.IsOpen = false;
         }
 
