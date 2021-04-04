@@ -424,19 +424,81 @@ namespace SMS_System
 
                         if(Send_CompareSMS)
                         {
-                            cmd.CommandText = "SELECT (IDDALL.IDD || DOMALL.DOM) SMSCONTENT FROM " +
-    "(SELECT 1 sl, (IDDINC.IDDIncomming || IDDOUTG.IDDOutgoing) IDD FROM " +
-    "(select 1 sl, ('ANS traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd/mm') || ' Intl In: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') IDDIncomming from cdr_inter_ans_stat t " +
-    "where  t.transit_type = '32' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
-    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) IDDINC " +
-    "INNER join (select 1 sl,(' and Intl Out: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm, ') IDDOutgoing from cdr_inter_ans_stat t " +
-    "where  t.transit_type = '30' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
-    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) IDDOUTG on IDDINC.sl=IDDOUTG.sl) IDDALL " +
-    "INNER JOIN (SELECT 1 sl, (DMOUTG.DMOutgoing || DMINC.DMIncomming) DOM FROM " +
-    "(select 1 sl, (' Dmstc Out: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') DMOutgoing from cdr_inter_ans_stat t " +
-    "where  t.transit_type = '31' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) DMOUTG " +
-    "INNER join (select 1 sl,(' and In : ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') DMIncomming from cdr_inter_ans_stat t " +
-    "where  t.transit_type = '33' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) DMINC on DMOUTG.sl=DMINC.sl) DOMALL ON DOMALL.sl= IDDALL.sl";
+                            cmd.CommandText = @"select ('ANS traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd/mm')) || ': Intl In: ' || to_char(round(IDD_INCALL.a, 0),'999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(IDD_INCALL.b,0),'999,999') 
+                                || ', Diff: ' || to_char(round(IDD_INCALL.a - IDD_INCALL.b,0),'99,999') || ')'
+
+                                || ' and Intl Out: ' || to_char(round(IDD_OUTGALL.a, 0),'99,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(IDD_OUTGALL.b,0),'99,999') 
+                                || ', Diff: ' || to_char(round(IDD_OUTGALL.a - IDD_OUTGALL.b,0),'9,999') || ')'
+
+                                || ', Dmstc In: ' || to_char(round(DOM_INCALL.a, 0),'9,999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(DOM_INCALL.b,0),'9,999,999') 
+                                || ', Diff: ' || to_char(round(DOM_INCALL.a - DOM_INCALL.b,0),'999,999') || ')'
+
+                                || ', Dmstc Out: ' || to_char(round(DOM_OUTGALL.a, 0),'99,999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(DOM_OUTGALL.b,0),'99,999,999') 
+                                || ', Diff: ' || to_char(round(DOM_OUTGALL.a - DOM_OUTGALL.b,0),'9999,999') || ')'
+
+                                as SMSCONTENT from
+                                (
+                                  (select 1 sl, IDDINC.Incoming a, PRV_IDDINC.Incoming b from
+                                    (select 1 sl, sum(t.duration_float) Incoming from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '32' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) IDDINC
+
+                                    inner join
+
+                                    (select 1 sl, sum(t.duration_float) Incoming from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '32' AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_IDDINC
+                                  on IDDINC.sl=PRV_IDDINC.sl) IDD_INCALL
+  
+                                  INNER join
+  
+                                  (select 1 sl, IDDOUTG.Outgoing a, PRV_IDDOUTG.Outgoing b from
+                                    (select 1 sl, sum(t.duration_float) Outgoing from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '30' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                    and t.partition_day = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) IDDOUTG
+
+                                    inner join
+
+                                    (select 1 sl, sum(t.duration_float) Outgoing from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '30' AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_IDDOUTG
+                                    on IDDOUTG.sl=PRV_IDDOUTG.sl) IDD_OUTGALL
+                                  on IDD_INCALL.sl = IDD_OUTGALL.sl
+  
+                                  INNER join
+  
+                                  (select 1 sl, DOMINC.Incoming a, PRV_DOMINC.Incoming b from
+                                    (select 1 sl, sum(t.duration_float) Incoming from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '33' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                    and t.partition_day = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) DOMINC
+
+                                    inner join
+
+                                    (select 1 sl, sum(t.duration_float) Incoming from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '33' AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_DOMINC
+                                    on DOMINC.sl=PRV_DOMINC.sl) DOM_INCALL
+                                  on IDD_INCALL.sl = DOM_INCALL.sl
+  
+                                    INNER join
+  
+                                  (select 1 sl, DOMOUTG.Outgoing a, PRV_DOMOUTG.Outgoing b from
+                                    (select 1 sl, sum(t.duration_float) Outgoing from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '31' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                    and t.partition_day = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) DOMOUTG
+
+                                    inner join
+
+                                    (select 1 sl, sum(t.duration_float) Outgoing from cdr_inter_ans_stat t
+                                    where  t.TRANSIT_TYPE = '31' AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_DOMOUTG
+                                    on DOMOUTG.sl=PRV_DOMOUTG.sl) DOM_OUTGALL
+                                  on IDD_INCALL.sl = DOM_OUTGALL.sl
+                                )";
 
 
                             reader = cmd.ExecuteReader();
@@ -476,17 +538,62 @@ namespace SMS_System
 
                         if(Send_CompareSMS)
                         {
-                            cmd.CommandText = "SELECT (IDDALL.INTALL || DOMALL.DOM) SMSCONTENT FROM " +
-    "(SELECT 1 sl,(INC.Incomming || OUTG.Outgoing) INTALL FROM " +
-    "(select 1 sl, ('ICX traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd/mm') || ' Intl In: ' || to_char(round(sum(t.duration)/60,0),'999,999,999,999')|| ' pm') Incomming from cdr_inter_icx_stat t " +
-    "where  t.transit_type = '11' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
-    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) INC " +
-    "INNER join (select 1 sl,(' and Out: ' || to_char(round(sum(t.duration)/60,0),'999,999,999,999')|| ' pm, ') Outgoing from cdr_inter_icx_stat t " +
-    "where  t.transit_type = '12' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
-    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) OUTG on INC.sl=OUTG.sl) IDDALL " +
-    "INNER join (select 1 sl,(' DOM : ' || to_char(round(sum(t.duration)/60,0),'999,999,999,999')|| ' pm') DOM from cdr_inter_icx_stat t " +
-    "where  t.transit_type = '10' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
-    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) DOMALL ON DOMALL.sl = IDDALL.sl";
+                            cmd.CommandText = @"select ('ICX traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd/mm')) || ': Intl In: ' || to_char(round(IDD_INCALL.a, 0),'99,999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(IDD_INCALL.b,0),'99,999,999') 
+                                || ', Diff: ' || to_char(round(IDD_INCALL.a - IDD_INCALL.b,0),'99,999,999') || ')'
+
+                                || ' and Intl Out: ' || to_char(round(IDD_OUTGALL.a, 0),'999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(IDD_OUTGALL.b,0),'999,999') 
+                                || ', Diff: ' || to_char(round(IDD_OUTGALL.a - IDD_OUTGALL.b,0),'99,999') || ')'
+
+                                || ', Dmstc: ' || to_char(round(DOM_ALL.a, 0),'99,999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(DOM_ALL.b,0),'99,999,999') 
+                                || ', Diff: ' || to_char(round(DOM_ALL.a - DOM_ALL.b,0),'99,999,999') || ')'
+
+                                as SMSCONTENT from
+                                (
+                                  (select 1 sl, IDDINC.Incoming a, PRV_IDDINC.Incoming b from
+                                    (select 1 sl, sum(t.DURATION)/60 Incoming from cdr_inter_icx_stat t
+                                    where  t.TRANSIT_TYPE = '11' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) IDDINC
+
+                                    inner join
+
+                                    (select 1 sl, sum(t.DURATION)/60 Incoming from cdr_inter_icx_stat t
+                                    where  t.TRANSIT_TYPE = '11' AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_IDDINC
+                                  on IDDINC.sl=PRV_IDDINC.sl) IDD_INCALL
+  
+                                  INNER join
+  
+                                  (select 1 sl, IDDOUTG.Outgoing a, PRV_IDDOUTG.Outgoing b from
+                                    (select 1 sl, sum(t.DURATION)/60 Outgoing from cdr_inter_icx_stat t
+                                    where  t.TRANSIT_TYPE = '12' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                    and t.partition_day = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) IDDOUTG
+
+                                    inner join
+
+                                    (select 1 sl, sum(t.DURATION)/60 Outgoing from cdr_inter_icx_stat t
+                                    where  t.TRANSIT_TYPE = '12' AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_IDDOUTG
+                                    on IDDOUTG.sl=PRV_IDDOUTG.sl) IDD_OUTGALL
+                                  on IDD_INCALL.sl = IDD_OUTGALL.sl
+  
+                                  INNER join
+  
+                                  (select 1 sl, DOM.DomLocal a, PRV_DOM.DomLocal b from
+                                    (select 1 sl, sum(t.DURATION)/60 DomLocal from cdr_inter_icx_stat t
+                                    where  t.TRANSIT_TYPE = '10' AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                    and t.partition_day = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) DOM
+
+                                    inner join
+
+                                    (select 1 sl, sum(t.DURATION)/60 DomLocal from cdr_inter_icx_stat t
+                                    where  t.TRANSIT_TYPE = '10' AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                    and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_DOM
+                                    on DOM.sl=PRV_DOM.sl) DOM_ALL
+                                  on IDD_INCALL.sl = DOM_ALL.sl
+                                )";
 
                             reader = cmd.ExecuteReader();
 
@@ -520,12 +627,42 @@ namespace SMS_System
 
                         if(Send_CompareSMS)
                         {
-                            cmd.CommandText = "SELECT (INC.Incomming || OUTG.Outgoing) SMSCONTENT FROM " +
-    "(select 1 sl, ('IGW traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd/mm') || ' In: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') Incomming from cdr_inter_itx_stat t " +
-    "where  t.transit_type in ('23','24','25') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') " +
-    "and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) INC " +
-    "INNER join (select 1 sl,(' and Out: ' || to_char(round(sum(t.duration_float),0),'999,999,999,999')|| ' pm') Outgoing from cdr_inter_itx_stat t " +
-    "where  t.TRANSIT_TYPE in ('20','21','22') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + "),'yyyymm') and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + "),'dd')) OUTG on INC.sl=OUTG.sl";
+                            cmd.CommandText = @"select ('IGW traffic for ' || TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd/mm')) || ': In: ' || to_char(round(INCALL.a, 0),'99,999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(INCALL.b,0),'99,999,999') 
+                                || ', Diff: ' || to_char(round(INCALL.a - INCALL.b,0),'99,999,999') || ')'
+
+                                || ' and Out: ' || to_char(round(OUTGALL.a, 0),'999,999') 
+                                || ' pm' || ' (prev week: ' || to_char(round(OUTGALL.b,0),'999,999') 
+                                || ', Diff: ' || to_char(round(OUTGALL.a - OUTGALL.b,0),'9,999') || ')'
+                                as SMSCONTENT from
+                                (
+                                  (select 1 sl, INC.Incoming a, PRV_INC.Incoming b from
+                                  (select 1 sl, sum(t.DURATION_FLOAT) Incoming from cdr_inter_itx_stat t
+                                  where  t.TRANSIT_TYPE in ('23','24','25') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                  and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) INC
+
+                                  inner join
+
+                                  (select 1 sl, sum(t.DURATION_FLOAT) Incoming from cdr_inter_itx_stat t
+                                  where  t.TRANSIT_TYPE in ('23','24','25') AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                  and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_INC
+                                  on INC.sl=PRV_INC.sl) INCALL
+  
+                                  INNER join
+  
+                                  (select 1 sl, OUTG.Outgoing a, PRV_OUTG.Outgoing b from
+                                  (select 1 sl, sum(t.DURATION_FLOAT) Outgoing from cdr_inter_itx_stat t
+                                  where  t.TRANSIT_TYPE in ('20','21','22','99') AND t.billingcycle = TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'yyyymm')
+                                  and t.partition_day =  TO_CHAR((sysdate-" + SubtractiveDataDay + @"),'dd')) OUTG
+
+                                  inner join
+
+                                  (select 1 sl, sum(t.DURATION_FLOAT) Outgoing from cdr_inter_itx_stat t
+                                  where  t.TRANSIT_TYPE in ('20','21','22','99') AND t.billingcycle = TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'yyyymm')
+                                  and t.partition_day =  TO_CHAR((sysdate-" + (SubtractiveDataDay + 7).ToString() + @"),'dd')) PRV_OUTG
+                                  on OUTG.sl=PRV_OUTG.sl) OUTGALL
+                                  on INCALL.sl = OUTGALL.sl
+                                )";
 
                             reader = cmd.ExecuteReader();
 
